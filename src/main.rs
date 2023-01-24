@@ -6,7 +6,7 @@ mod stt;
 
 use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}, path::Path};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,7 +16,11 @@ async fn main() -> Result<()> {
     let pb = create_pb();
     pb.set_message("Downloading audio file...");
 
-    files::download_bytes(&config.audio_src, &config.local_file).await?;
+    if Path::new(&config.local_file).exists() {
+        pb.set_message("Audio file already exists, skipping download...");
+    } else {
+        files::download_bytes(&config.audio_src, &config.local_file).await?;
+    }
 
     pb.set_message("Converting to wav...");
 

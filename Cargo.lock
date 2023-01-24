@@ -1128,7 +1128,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rs-processor"
+name = "rs-stt-processor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
