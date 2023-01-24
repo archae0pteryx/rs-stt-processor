@@ -5,17 +5,20 @@ use std::process;
 
 use aws_sdk_s3::{ByteStream, Client, Error, output::PutObjectOutput};
 
-pub async fn s3_upload(path: &str) -> anyhow::Result<PutObjectOutput> {
-    let config = aws_config::load_from_env().await;
-    let client = Client::new(&config);
+use crate::files::Config;
+
+pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<PutObjectOutput> {
+    let aws_config = aws_config::load_from_env().await;
+    let client = Client::new(&aws_config);
     let file = ByteStream::from_path(Path::new(path)).await;
     let resp;
+
     match file {
         Ok(f) => {
             resp = client
                 .put_object()
-                .bucket(bucket)
-                .key(key)
+                .bucket(&config.s3_bucket)
+                .key(path)
                 .body(f)
                 .send()
                 .await?;

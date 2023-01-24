@@ -1,61 +1,54 @@
-#![allow(unused)]
+// #![allow(unused)]
 mod aws;
-mod constants;
-mod fetchers;
 mod ffmpeg;
 mod files;
 mod stt;
 
 use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::{
-    env,
-    time::{Duration, Instant},
-};
-use stt::Transcripts;
-
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ProcessedFile {
-    pub stt_data: Transcripts,
-    pub src_file: String,
-    pub dest_file: String,
-    pub shortname: String,
-}
+use std::time::{Duration, Instant};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    aws::
-    // let start_time = Instant::now();
+    let config = files::load_config();
+    let start_time = Instant::now();
 
-    // let pb = ProgressBar::new_spinner();
-    // pb.enable_steady_tick(Duration::from_millis(300));
-    // pb.set_style(
-    //     ProgressStyle::default_spinner()
-    //         .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
-    //         .template("{spinner:.green} [{elapsed:.yellow}] {msg:.blue}")?,
-    // );
-    // pb.set_message(format!("Processing audio files..."));
+    let pb = create_pb();
+    pb.set_message("Downloading audio file...");
 
-    // let src_file = env::args().nth(1).expect("No audio file provided");
-    // ffmpeg::process_mp3s(&src_file)?;
+    files::download_bytes(&config.audio_src, &config.local_file).await?;
 
-    // let ffmpeg_end = Instant::now();
-    // let ffmpeg_elapsed = ffmpeg_end.duration_since(start_time);
-    // let ffmpeg_total = ffmpeg_elapsed.as_secs();
+    pb.set_message("Converting to wav...");
 
-    // pb.set_message("Running stt processing");
+    ffmpeg::process_mp3s(&config)?;
 
-    // stt::process_wav_segments(&src_file)?;
+    let ffmpeg_end = Instant::now();
+    let ffmpeg_elapsed = ffmpeg_end.duration_since(start_time);
+    let ffmpeg_total = ffmpeg_elapsed.as_secs();
 
-    // let stt_end = Instant::now();
-    // let stt_elapsed = stt_end.duration_since(start_time);
-    // let stt_total = stt_elapsed.as_secs();
+    pb.set_message("Running stt processing...");
 
-    // pb.finish_with_message(format!(
-    //     "\n\nCompleted wav conversion in: {} seconds\nCompleted stt conversion in: {}",
-    //     ffmpeg_total, stt_total
-    // ));
+    stt::process_wav_segments(&config)?;
+
+    let stt_end = Instant::now();
+    let stt_elapsed = stt_end.duration_since(start_time);
+    let stt_total = stt_elapsed.as_secs();
+
+    pb.finish_with_message(format!(
+        "\n\nCompleted wav conversion in: {} seconds\nCompleted stt conversion in: {}",
+        ffmpeg_total, stt_total
+    ));
     Ok(())
+}
+
+fn create_pb() -> ProgressBar {
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(300));
+    pb.set_style(
+        ProgressStyle::default_spinner()
+            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+            .template("{spinner:.green} [{elapsed:.yellow}] {msg:.cyan}")
+            .unwrap(),
+    );
+    pb
 }

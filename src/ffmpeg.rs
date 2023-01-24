@@ -1,32 +1,31 @@
-use crate::{constants::SPLIT_AUDIO_DIR, files};
+use crate::files::Config;
 use rayon::prelude::*;
 use std::{
     fs::{self},
     process::{Command, Stdio},
 };
 
-pub fn process_mp3s(src_file: &str) -> anyhow::Result<()> {
-    process_segments(src_file)?;
+pub fn process_mp3s(config: &Config) -> anyhow::Result<()> {
+    process_segments(config)?;
     Ok(())
 }
 
-fn process_segments(src_file: &str) -> anyhow::Result<()> {
-    let segments = calc_segments(src_file);
-
-    let shortname = files::get_shortname(src_file).clone();
-    let audio_dir = format!("{}/{}", SPLIT_AUDIO_DIR.clone(), shortname);
+fn process_segments(config: &Config) -> anyhow::Result<()> {
+    let segments = calc_segments(&config.local_file);
+    let audio_dir = format!("{}/wav/{}", &config.output_dir, &config.shortname);
 
     fs::create_dir_all(audio_dir).expect("Failed to create audio directory");
 
     segments.par_iter().for_each(|(start, end)| {
+        let c = config.clone();
         let output_file = format!(
-            "{}/{}/{}_{}-{}",
-            SPLIT_AUDIO_DIR, shortname, shortname, start, end
+            "{}/wav/{}/{}_{}-{}.wav",
+            c.output_dir, c.shortname, c.shortname, start, end
         );
 
         let command = format!(
             "ffmpeg -i {} -ss {} -to {} -ar 16000 -ac 1 -acodec pcm_s16le -f wav {}",
-            src_file, start, end, output_file
+            &c.local_file, start, end, output_file
         );
 
         Command::new("sh")
