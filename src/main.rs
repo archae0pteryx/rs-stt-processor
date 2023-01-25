@@ -32,7 +32,9 @@ async fn main() -> Result<()> {
 
     pb.set_message("Running stt processing...");
 
-    stt::process_wav_segments(&config)?;
+    let output_json = stt::process_wav_segments(&config)?;
+
+    aws::s3_upload(&config, &output_json).await?;
 
     let stt_end = Instant::now();
     let stt_elapsed = stt_end.duration_since(start_time);

@@ -9,8 +9,14 @@ use std::sync::{Arc, Mutex};
 use std::{fs::File, path::Path};
 use walkdir::WalkDir;
 
-pub fn process_wav_segments(config: &Config) -> anyhow::Result<()> {
+pub fn process_wav_segments(config: &Config) -> anyhow::Result<String> {
     let episode_shortname = &config.shortname;
+    let out_json_path = format!("{}/json/{}.json", &config.output_dir, episode_shortname);
+
+    if Path::new(&out_json_path).exists() {
+        println!("{} already exists, skipping...", out_json_path);
+        return Ok(out_json_path);
+    }
 
     validate_models_exist(&config);
 
@@ -33,19 +39,15 @@ pub fn process_wav_segments(config: &Config) -> anyhow::Result<()> {
     let j = serde_json::to_string(&*json_results)
         .expect("Failed to convert mutex word vec to json string");
 
-    let out_json_path = format!("{}/json/{}.json", &config.output_dir, episode_shortname);
-
     fs::create_dir_all(format!("{}/json", &config.output_dir))
         .expect("Failed to create json directory");
-
     let mut json_file = File::create(&out_json_path)
         .expect(format!("Error creating json file: {}", out_json_path).as_str());
-
     json_file
         .write_all(j.as_bytes())
         .expect("Failed to write json file");
 
-    Ok(())
+    Ok(out_json_path)
 }
 
 fn process_stt(config: &Config, wav_path: &str) -> String {

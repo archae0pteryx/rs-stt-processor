@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use std::fs;
 use reqwest::Client;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
@@ -14,19 +14,26 @@ pub struct Config {
     pub output_dir: String,
     pub s3_bucket: String,
     pub audio_src: String,
+    #[serde(default = "String::new")]
     pub shortname: String,
+    #[serde(default = "String::new")]
     pub local_file: String,
 }
 
 pub fn load_config() -> Config {
     let loaded_str = fs::read_to_string("config.json").unwrap();
     let config_json: Config = serde_json::from_str(&loaded_str).unwrap();
-    let shortname = get_shortname(&config_json.audio_src);
     let local_file = create_dest_path(&config_json);
-
+    let args = std::env::args().collect::<Vec<String>>();
+    let p = match args.get(1) {
+        Some(p) => p,
+        None => &config_json.audio_src,
+    };
+    let shortname = get_shortname(p);
     Config {
         shortname,
         local_file,
+        audio_src: p.to_owned(),
         ..config_json
     }
 }
@@ -61,12 +68,4 @@ pub fn get_shortname(audio_src: &str) -> String {
     let stripped_ext = src_file.with_extension("");
     let raw_filename = stripped_ext.file_name().unwrap().to_str().unwrap();
     String::from(raw_filename)
-}
-
-#[allow(dead_code)]
-fn is_valid_url(input: &str) -> bool {
-    match url::Url::parse(input) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
 }

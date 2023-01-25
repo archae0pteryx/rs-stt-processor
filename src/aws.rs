@@ -12,7 +12,7 @@ pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<PutObjectO
     let client = Client::new(&aws_config);
     let file = ByteStream::from_path(Path::new(path)).await;
     let resp;
-
+    println!("Uploading file to bucket: {}", path);
     match file {
         Ok(f) => {
             resp = client
@@ -27,6 +27,6 @@ pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<PutObjectO
             panic!("Error uploading file: {:?}", e);
         }
     };
-
+    
     Ok(resp)
 }
