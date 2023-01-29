@@ -2,17 +2,20 @@
 
 use std::path::Path;
 use std::process;
+use clap::Parser;
 
 use aws_sdk_s3::{ByteStream, Client, Error, output::PutObjectOutput};
 
-use crate::files::Config;
+use crate::files::{Config, Args};
 
-pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<PutObjectOutput> {
+pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<()> {
+    let args = Args::parse();
+
     let aws_config = aws_config::load_from_env().await;
     let client = Client::new(&aws_config);
     let file = ByteStream::from_path(Path::new(path)).await;
     let resp;
-    println!("Uploading file to bucket: {}", path);
+    println!("Uploading...");
     match file {
         Ok(f) => {
             resp = client
@@ -27,6 +30,6 @@ pub async fn s3_upload(config: &Config, path: &str) -> anyhow::Result<PutObjectO
             panic!("Error uploading file: {:?}", e);
         }
     };
-    
-    Ok(resp)
+    println!("Uploaded!");
+    Ok(())
 }

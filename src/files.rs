@@ -4,6 +4,26 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+use clap::Parser;
+
+#[derive(Parser, Debug, Serialize, Deserialize, Default)]
+pub struct Args {
+    pub src: String,
+
+    #[arg(default_value = "Vec::new")]
+    #[clap(long)]
+    #[arg(default_value = "stt, upload, waveform")]
+    pub only: Vec<String>,
+
+    #[arg(default_value = "stt, upload, waveform")]
+    #[clap(short, long)]
+    pub upload: Vec<String>,
+
+    #[arg(default_value = "output")]
+    #[clap(short, long)]
+    pub out: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     pub files_dir: String,
@@ -24,6 +44,7 @@ pub fn load_config() -> Config {
     let loaded_str = fs::read_to_string("config.json").unwrap();
     let config_json: Config = serde_json::from_str(&loaded_str).unwrap();
     let local_file = create_dest_path(&config_json);
+
     let args = std::env::args().collect::<Vec<String>>();
     let p = match args.get(1) {
         Some(p) => p,
@@ -31,7 +52,7 @@ pub fn load_config() -> Config {
     };
     let shortname = get_shortname(p);
     Config {
-        shortname,
+        shortname: shortname.to_owned(),
         local_file,
         audio_src: p.to_owned(),
         ..config_json

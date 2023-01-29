@@ -1,12 +1,24 @@
-use crate::files::Config;
+use crate::files::{Config, Args};
+use indicatif::ProgressBar;
 use rayon::prelude::*;
+use clap::Parser;
+
 use std::{
     fs::{self},
     process::{Command, Stdio},
 };
 
-pub fn process_mp3s(config: &Config) -> anyhow::Result<()> {
-    process_segments(config)?;
+pub fn process_mp3s(pb: &ProgressBar, config: &Config) -> anyhow::Result<()> {
+    let cli_args = Args::parse();
+    let contains_only = cli_args.only.contains(&String::from("ffmpeg"));
+    let only_is_empty = cli_args.only.is_empty();
+
+    if !only_is_empty && contains_only {
+        pb.set_message("Converting to wav...");
+        process_segments(config)?;
+        return Ok(());
+    }
+    println!("skipping ffmpeg");
     Ok(())
 }
 
