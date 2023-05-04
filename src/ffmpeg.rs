@@ -1,12 +1,31 @@
-use crate::files::{Config, Args};
-use indicatif::ProgressBar;
-use rayon::prelude::*;
+use crate::{
+    files::{Args, Config},
+    WORKDIR,
+};
 use clap::Parser;
+use indicatif::ProgressBar;
+use log::debug;
+use rayon::prelude::*;
 
 use std::{
     fs::{self},
     process::{Command, Stdio},
 };
+
+pub fn split_audio(src: &str, dest: &str) {
+    let command = format!(
+        "ffmpeg -i {} -f segment -segment_time 600 -c copy {}/%03d.wav",
+        src, dest
+    );
+
+    debug!("running: {}", command);
+
+    Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()
+        .expect("Failed to execute command");
+}
 
 pub fn process_mp3s(pb: &ProgressBar, config: &Config) -> anyhow::Result<()> {
     let cli_args = Args::parse();

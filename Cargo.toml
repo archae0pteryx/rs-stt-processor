@@ -27,3 +27,5 @@ indicatif = "0.17.3"
 walkdir = "2.3.2"
 # url = "2.3.1"
 clap = { version = "4.1.4", features = ["derive"] }
+env_logger = { version = "0.10.0", features = ["auto-color", "humantime"] }
+log = "0.4.17"
