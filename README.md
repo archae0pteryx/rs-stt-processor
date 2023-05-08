@@ -9,7 +9,13 @@ Splits mp3s into chunks, converts them to wavs in mono at 16Hz, then processes i
 build with `cargo build --release`
 
 ```terminal
-# Dependencies
+ffmpeg -i originals/sn-906.20s.mp3 -acodec pcm_s16le -ac 1 -ar 16000 -aframes 10000 test-audio.wav
+stt --model models/coqui-model.tflite --scorer models/coqui-huge-vocabulary.scorer --audio test-audio.wav --json > out-stt.json
+```
+
+
+```terminal
+# Notes
 
 python -m pip install coqui-stt-model-manager
 python -m pip install stt
@@ -19,7 +25,7 @@ ffmpeg -i 800.mp3 -acodec pcm_s16le -ac 1 -ar 16000 -aframes 10000 800.wav
 ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1
 ffmpeg -ss 60 -i input-audio.aac -t 15 -c copy output.aac
 ffmpeg -i files/episodes/sn0904.mp3 -acodec pcm_s16le -ac 1 -ar 16000 files/output/sn0904.wav
-
+ffmpeg -i originals/sn-906.mp3 -ss 0 -t 20 -c copy originals/sn-906.20s.mp3
 
 # DS/STT
 pip3 install stt
@@ -27,7 +33,7 @@ pip3 install deepspeech
 
 deepspeech --model models/deepspeech-0.9.3-models.pbmm --scorer models/deepspeech-0.9.3-models.scorer --audio sandbox/800.wav --json > out.json
 
-stt --model models/stt-huge-1.4.tflite --scorer models/stt-huge-1.4.scorer --audio sandbox/800.wav --json > out-stt.json
+stt --model models/coqui-model.tflite --scorer models/coqui-huge-vocabulary.scorer --audio originals/sn-906.20s.mp3 --json > out-stt.json
 
 # Deepspeech
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm

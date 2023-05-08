@@ -27,3 +27,5 @@ indicatif = "0.17.3"
 walkdir = "2.3.2"
 # url = "2.3.1"
 clap = { version = "4.1.4", features = ["derive"] }
+vosk = "0.2.0"
+rodio = "0.16.0"

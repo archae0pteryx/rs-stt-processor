@@ -1,10 +1,11 @@
 {
-  "files_dir": "files",
+  "files_dir": "originals",
   "model_path": "models/coqui-model.tflite",
   "model_url": "https://coqui.gateway.scarf.sh/english/coqui/v1.0.0-huge-vocab/model.tflite",
   "scorer_path": "models/coqui-huge-vocabulary.scorer",
   "scorer_url": "https://coqui.gateway.scarf.sh/english/coqui/v1.0.0-huge-vocab/huge-vocabulary.scorer",
   "output_dir": "output",
   "s3_bucket": "ds-stt-bucket",
-  "audio_src": "https://media.grc.com/sn/sn-906.mp3"
+  "audio_src": "originals/sn-906.20s.mp3",
+  "wav_chunk_size": 2
 }

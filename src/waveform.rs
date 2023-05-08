@@ -17,17 +17,15 @@ fn waveform_path(config: &Config) -> String {
 pub async fn gen_waveform(pb: &ProgressBar, config: &Config) -> anyhow::Result<()> {
     let cli_args = Args::parse();
     let contains_only = cli_args.only.contains(&String::from("waveform"));
-    let contains_upload = cli_args.upload.contains(&String::from("waveform"));
     let only_is_empty = cli_args.only.is_empty();
-    let upload_is_empty = cli_args.upload.is_empty();
 
-    if (only_is_empty && upload_is_empty) || (!contains_upload && contains_only) {
+    if only_is_empty || contains_only {
         pb.set_message("Running waveform processing...");
         process_waveform(&config).await?;
         return Ok(());
     }
 
-    if (upload_is_empty && only_is_empty) || (!contains_only && contains_upload) {
+    if only_is_empty || contains_only {
         pb.set_message("Uploading waveform json...");
         let output_file = waveform_path(config);
         aws::s3_upload(&config, &output_file).await?;
