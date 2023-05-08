@@ -29,3 +29,5 @@ walkdir = "2.3.2"
 clap = { version = "4.1.4", features = ["derive"] }
 env_logger = { version = "0.10.0", features = ["auto-color", "humantime"] }
 log = "0.4.17"
+vosk = "0.2.0"
+rodio = "0.16.0"

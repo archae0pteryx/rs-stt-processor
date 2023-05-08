@@ -12,9 +12,16 @@ use youtube_dl::youtube_dl;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{
+    fs,
     path::Path,
     time::{Duration, Instant},
 };
+use vosk::{Model, Recognizer};
+
+use rodio::source::SamplesConverter;
+use rodio::Source;
+use std::fs::File;
+use std::io::BufReader;
 
 use env_logger;
 use std::env;

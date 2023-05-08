@@ -1,3 +1,7 @@
 target
 tmp
 .DS_Store
+<<<<<<< HEAD
+=======
+.vscode
+>>>>>>> wip/zeal

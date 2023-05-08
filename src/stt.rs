@@ -4,36 +4,37 @@ use clap::Parser;
 use indicatif::ProgressBar;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::cmp::Reverse;
+use std::collections::{HashSet, HashMap};
 use std::fs;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use std::sync::Barrier;
+use std::sync::{Barrier, MutexGuard};
 use std::sync::{Arc, Mutex};
 use std::{fs::File, path::Path};
 use walkdir::WalkDir;
 
 fn stt_file_path(config: &Config) -> String {
-    format!("{}/json/{}.stt.json", &config.output_dir, &config.shortname)
+    format!("{}/{}.stt.json", &config.ep_output_dir, &config.shortname)
 }
 
 pub async fn process_stt(pb: &ProgressBar, config: &Config) -> anyhow::Result<()> {
     let cli_args = Args::parse();
     let contains_only = cli_args.only.contains(&String::from("stt"));
-    let contains_upload = cli_args.upload.contains(&String::from("stt"));
     let only_is_empty = cli_args.only.is_empty();
-    let upload_is_empty = cli_args.upload.is_empty();
 
-    if (only_is_empty && upload_is_empty) || (!contains_upload && contains_only) {
+    if only_is_empty || contains_only {
         pb.set_message("Running stt processing...");
         process_wav_segments(&config).await?;
     } else {
         println!("skipping stt processing");
     }
 
-    if (upload_is_empty && only_is_empty) || (!contains_only && contains_upload) {
+    if only_is_empty || contains_only {
         pb.set_message("Uploading stt to s3");
         let output_file = stt_file_path(&config);
-        aws::s3_upload(&config, &output_file).await?;
+        // aws::s3_upload(&config, &output_file).await?;
     } else {
         println!("skipping stt upload");
     }
@@ -52,7 +53,6 @@ async fn process_wav_segments(config: &Config) -> anyhow::Result<()> {
     validate_models_exist(&config);
 
     let wav_segment_paths = get_wav_segment_paths(&config);
-
     let barrier = Barrier::new(wav_segment_paths.len());
     let json_results = Arc::new(Mutex::new(vec![]));
 
@@ -62,21 +62,21 @@ async fn process_wav_segments(config: &Config) -> anyhow::Result<()> {
         json_results.lock().unwrap().extend(word_data);
         barrier.wait();
     });
-
+    dbg!(&json_results);
     let json_results = json_results.clone();
     let mut json_results = json_results.lock().unwrap();
     json_results.sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
-
+    remove_duplicates(&mut json_results);
     let j = serde_json::to_string(&*json_results)
         .expect("Failed to convert mutex word vec to json string");
 
-    fs::create_dir_all(format!("{}/json", &config.output_dir))
-        .expect("Failed to create json directory");
+    fs::create_dir_all(&config.ep_output_dir).expect("Failed to create stt directory");
+
     let mut json_file = File::create(&out_json_path)
-        .expect(format!("Error creating json file: {}", out_json_path).as_str());
+        .expect(format!("Error creating stt file: {}", out_json_path).as_str());
     json_file
         .write_all(j.as_bytes())
-        .expect("Failed to write json file");
+        .expect("Failed to write stt file");
 
     Ok(())
 }
@@ -124,14 +124,83 @@ fn validate_models_exist(config: &Config) {
 }
 
 pub fn get_wav_segment_paths(config: &Config) -> Vec<String> {
-    let dir = format!("{}/wav/{}", &config.output_dir, &config.shortname);
-    let d = WalkDir::new(dir)
+    let mut d = WalkDir::new(&config.wavs_dir)
         .into_iter()
         .filter_map(|file| file.ok())
         .map(|f| f.path().to_str().unwrap().to_string())
         .collect::<Vec<_>>();
+    d.sort();
+    if d.is_empty() {
+        panic!("No wav files found in {}", &config.wavs_dir);
+    }
+    dbg!(&d);
     return d;
 }
+
+
+fn remove_duplicates(words_vec: &mut MutexGuard<Vec<Words>>) {
+    let mut unique_floats: Vec<f64> = vec![];
+
+    words_vec.retain(|words| {
+        let tolerance = 0.0001;
+        let start_time = words.start_time;
+        let is_unique = unique_floats.iter().all(|&x| {
+            let diff = (x - start_time).abs();
+            diff > tolerance
+        });
+        if is_unique {
+            unique_floats.push(start_time);
+        }
+        is_unique
+    });
+}
+
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct IWords {
+    word: String,
+    start_time: i64,
+    duration: i64,
+}
+
+fn convert_time(words: &mut Vec<Words>) {
+    let mut new_words: Vec<IWords> = vec![];
+    for word in words {
+        new_words.push(IWords {
+            word: word.word.clone(),
+            start_time: word.start_time as i64,
+            duration: word.duration as i64,
+        });
+    }
+
+}
+
+// fn remove_duplicates(words: &mut Vec<IWords>) {
+//     let mut seen = std::collections::HashMap::new();
+//     words.retain(|word| {
+//         let start_time = word.start_time;
+//         if seen.contains_key(&start_time) {
+//             false
+//         } else {
+//             seen.insert(start_time, true);
+//             true
+//         }
+//     });
+// }
+
+// fn remove_duplicates2(words: Vec<IWords>) {
+//     let mut map: HashMap<i64, IWords> = HashMap::new();
+
+//     for word in words.iter() {
+//         if !map.contains_key(&word.start_time) {
+//             map.insert(word.start_time, word.clone());
+//         }
+//     }
+
+//     words.clear();
+//     words.extend(map.values());
+// }
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Transcripts {
@@ -140,13 +209,13 @@ pub struct Transcripts {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Transcript {
-    confidence: f32,
+    confidence: f64,
     words: Vec<Words>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Words {
     pub word: String,
-    pub start_time: f32,
-    pub duration: f32,
+    pub start_time: f64,
+    pub duration: f64,
 }
