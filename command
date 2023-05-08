@@ -1,0 +1,78 @@
+#!/bin/bash
+
+FILE=files/sn-auto-cap.json
+
+cat $FILE | jq -r '.events[]
+| {
+  total_start: (if .tStartMs then .tStartMs else 0 end),
+  total_end: (if .dDurationMs then (.tStartMs // 0) + .dDurationMs else 0 end),
+  words: (
+    if .segs then
+      [.segs[] | {word: .utf8, start: (.tOffsetMs // .tStartMs // 0)}]
+    else
+      []
+    end
+  )
+}
+'
+
+
+
+
+# cat $FILE | jq '.events | map({ tStartMs, dDurationMs, segs: .segs? })'
+
+# cat files/sn-auto-cap.json | jq '.events | map({ tStartMs, dDurationMs, segs: .segs? })'
+
+
+# cat files/sn-auto-cap.json | jq ".events[0].segs | map(select(.utf8) | { start: (.tOffsetMs // 0), end: (.tOffsetMs // 0) + (.tDurationMs // 0), word: .utf8 })"
+
+
+# Using the json parser jq and given a json of shape where a ? denotes a field that may or may not exist
+
+# {
+#   events: [
+#     {
+#     "tStartMs"?: 4020,
+#       "dDurationMs"?: 6659,
+#       "wWinId": 1,
+#       "segs"?: [
+#         {
+#           "utf8": "topics",
+#           "acAsrConf": 248
+#         },
+#         {
+#           "utf8": " can",
+#           "tOffsetMs"?: 420,
+#           "acAsrConf": 248
+#         },
+#         {
+#           "utf8": " the",
+#           "tOffsetMs": 1140,
+#           "acAsrConf": 248
+#         },
+#       ]
+#     },
+#     ...more
+
+#   ]
+# }
+
+# I want to extract:
+# {
+#   total_start: 0
+#   total_end: 6659
+#   words: [
+#   {
+#     word: "topics",
+#     start: 4020
+#   },
+#   {
+#     word: " can",
+#     start: 4440
+#   },
+#   {
+#     word: " the",
+#     start: 5160
+#   },
+# ]
+# }

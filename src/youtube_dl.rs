@@ -4,6 +4,8 @@ use log::debug;
 
 use crate::{WORKDIR, Target};
 
+static YTDL_CONFIG: &str = "ytdl.conf";
+
 pub async fn youtube_dl(url: &str) -> String {
     let name = url.split("=").last().unwrap();
     let out_path = format!("{}/raw/{}.wav", WORKDIR, name);
@@ -14,8 +16,8 @@ pub async fn youtube_dl(url: &str) -> String {
         .args(vec![
             "-c",
             format!(
-                "yt-dlp -x --audio-format wav  --output {} {}",
-                &out_path, url
+                "yt-dlp --config-location {} --output {} {}",
+                YTDL_CONFIG, &out_path, url
             )
             .as_str(),
         ])

@@ -71,6 +71,8 @@ fn create_dest_dir(target: Target) -> String {
     dest_dir
 }
 
+// https://www.youtube.com/watch?v=jm3JFYqvQxw
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
