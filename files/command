@@ -1,21 +1,29 @@
 #!/bin/bash
 
-FILE=files/sn-auto-cap.json
+FILES_DIR=files
+YT_URL="https://www.youtube.com/watch?v=jm3JFYqvQxw"
+CAPTIONS_URL=""
 
-cat $FILE | jq -r '.events[]
-| {
-  total_start: (if .tStartMs then .tStartMs else 0 end),
-  total_end: (if .dDurationMs then (.tStartMs // 0) + .dDurationMs else 0 end),
-  words: (
-    if .segs then
-      [.segs[] | {word: .utf8, start: (.tOffsetMs // .tStartMs // 0)}]
-    else
-      []
-    end
-  )
-}
-'
+yt-dlp --restrict-filenames --write-auto-subs --sub-format=json3 --sub-langs=en --skip-download "https://www.youtube.com/watch?v=jm3JFYqvQxw" --output "$FILES_DIR/%(title)s.%(ext)s"
 
+# cat $FILE | jq -r '.events
+# | {
+#   total_start: (if .tStartMs then .tStartMs else 0 end),
+#   total_end: (if .dDurationMs then (.tStartMs // 0) + .dDurationMs else 0 end),
+#   words: (
+#     if .segs then
+#       [.segs[] | {word: .utf8, start: (.tOffsetMs // .tStartMs // 0)}]
+#     else
+#       []
+#     end
+#   )
+# }
+# '
+
+# function fetch_metadata () {
+#   yt-dlp --dump-json $YT_URL > $FILES_DIR/yt_metadata.json
+# }
+# yt-dlp --list-subs --skip-download "https://www.youtube.com/watch?v=jm3JFYqvQxw"
 
 
 
