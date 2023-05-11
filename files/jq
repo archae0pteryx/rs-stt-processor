@@ -1,21 +1,19 @@
-#!/bin/bash
 
-FILE=files/sn-auto-cap.json
+# cat $FILE | jq -r '.events
+# | {
+#   total_start: (if .tStartMs then .tStartMs else 0 end),
+#   total_end: (if .dDurationMs then (.tStartMs // 0) + .dDurationMs else 0 end),
+#   words: (
+#     if .segs then
+#       [.segs[] | {word: .utf8, start: (.tOffsetMs // .tStartMs // 0)}]
+#     else
+#       []
+#     end
+#   )
+# }
+# '
 
-cat $FILE | jq -r '.events[]
-| {
-  total_start: (if .tStartMs then .tStartMs else 0 end),
-  total_end: (if .dDurationMs then (.tStartMs // 0) + .dDurationMs else 0 end),
-  words: (
-    if .segs then
-      [.segs[] | {word: .utf8, start: (.tOffsetMs // .tStartMs // 0)}]
-    else
-      []
-    end
-  )
-}
-'
-
+#cat out.json | jq '{ id: .id, title: .title, thumbnail: .thumbnail, description: .description, channel_id: .channel_id, duration: .duration }'
 
 
 

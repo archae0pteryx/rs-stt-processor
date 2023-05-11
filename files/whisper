@@ -1,0 +1,1 @@
+#whisper --model base.en --output_dir output --output_format all --word_timestamps True --threads 4

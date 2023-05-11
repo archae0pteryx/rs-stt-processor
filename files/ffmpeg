@@ -1,0 +1,2 @@
+
+#ffmpeg -t 1 -i "https://www.youtube.com/watch?v=jm3JFYqvQxw" -acodec pcm_s16le -ac 1 -ar 16000 piped.wav

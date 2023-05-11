@@ -1,30 +1,33 @@
-use std::process::{Command, Stdio};
+use std::{process::{Command, Stdio}, sync::Arc};
 
 use log::debug;
 
-use crate::{WORKDIR, Target};
+use crate::state::AppState;
 
 static YTDL_CONFIG: &str = "ytdl.conf";
 
-pub async fn youtube_dl(url: &str) -> String {
-    let name = url.split("=").last().unwrap();
-    let out_path = format!("{}/raw/{}.wav", WORKDIR, name);
-
-    debug!("downloading {} to: {}", &name, &out_path);
-
+pub fn youtube_dl(state: Arc<AppState>) {
+    let output_name = format!("{}/%(title)s.%(ext)s", state.paths.tmp_path);
+    let args = vec![
+        "yt-dlp",
+        "-x",
+        "--audio-format",
+        "wav",
+        "--restrict-filenames",
+        "--sub-lang",
+        "en",
+        "--sub-format",
+        "json3",
+        "--output",
+        &output_name,
+        "--write-auto-sub",
+        &state.url,
+    ];
     let out = Command::new("bash")
-        .args(vec![
-            "-c",
-            format!(
-                "yt-dlp --config-location {} --output {} {}",
-                YTDL_CONFIG, &out_path, url
-            )
-            .as_str(),
-        ])
+        .args(args)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .output()
         .expect("Shell command failed");
 
-    out_path.to_string()
 }
