@@ -69,3 +69,9 @@ ffmpeg -t 1 -i "https://www.youtube.com/watch?v=jm3JFYqvQxw" -acodec pcm_s16le -
 
 
 cat out.json | jq '{ id: .id, title: .title, thumbnail: .thumbnail, description: .description, channel_id: .channel_id, duration: .duration }'
+
+
+
+yt-dlp "https://www.youtube.com/watch?v=jm3JFYqvQxw" --config-location ./files/ytdl.conf
+
+yt-dlp -f best "https://www.youtube.com/watch?v=jm3JFYqvQxw" -o - | ffmpeg -ss 10 -i pipe:0 -acodec pcm_s16le -ac 1 -ar 16000 piped.wav

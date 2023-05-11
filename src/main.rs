@@ -5,8 +5,11 @@ mod files;
 mod stt;
 mod waveform;
 mod youtube_dl;
+mod state;
+
 use anyhow::Result;
 use ffmpeg::split_audio;
+use state::AppState;
 use std::process::{Command, Stdio};
 use youtube_dl::youtube_dl;
 
@@ -20,67 +23,12 @@ use env_logger;
 use std::env;
 use log;
 
-pub const WORKDIR: &str = "output";
-
-#[derive(Clone)]
-pub struct Target {
-    url: String,
-    raw_path: String,
-    raw_file_path: String,
-    wav_path: String,
-    name: String,
-}
-
-impl Target {
-    pub fn new(url: &str) -> Self {
-        let name = url.split("=").last().unwrap();
-        let root_path = String::from(WORKDIR);
-        let raw_path = format!("{}/raw", root_path);
-        let wav_path = format!("{}/wav", root_path);
-        Target {
-            url: url.to_string(),
-            name: name.to_string(),
-            raw_path: raw_path.clone(),
-            wav_path,
-            raw_file_path: format!("{}/{}.wav", raw_path, name),
-        }
-    }
-
-    pub async fn download_youtube(mut self) -> Self {
-        if !Path::new(&self.raw_file_path).exists() {
-            self.raw_file_path = youtube_dl(&self.url).await;
-        } else {
-            dbg!("file already exists. skipping download");
-        }
-        self
-    }
-
-    pub fn split_wav(mut self) -> Self {
-        let cp_self = self.clone();
-        let dest = create_dest_dir(cp_self);
-        split_audio(&self.raw_file_path.as_str(), dest.as_str());
-        self
-    }
-}
-
-fn create_dest_dir(target: Target) -> String {
-    let dest_dir = format!("{}/{}", target.wav_path, target.name);
-    if !Path::new(&dest_dir).exists() {
-        std::fs::create_dir_all(&dest_dir).expect("Failed to create audio directory");
-    }
-    dest_dir
-}
-
-// https://www.youtube.com/watch?v=jm3JFYqvQxw
-
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
 
-    Target::new("https://www.youtube.com/watch?v=xZIsuR6VVKE")
-        .download_youtube()
-        .await
-        .split_wav();
+    let state = AppState::new("https://www.youtube.com/watch?v=xZIsuR6VVKE");
+    // youtube_dl(state);
     // let config = files::load_config();
     // let start_time = Instant::now();
 

@@ -1,6 +1,5 @@
 use crate::{
     files::{Args, Config},
-    WORKDIR,
 };
 use clap::Parser;
 use indicatif::ProgressBar;
